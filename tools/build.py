@@ -22,7 +22,7 @@ SHORT = [d[:3] for d in DAYS]
 SLOTS = ["Mañana", "Mediodía", "Tarde", "Noche"]
 SITE = S["siteUrl"]                       # https://…/nadia-fitness-v4/
 SITE_PATH = "/" + SITE.split("/", 3)[3]   # /nadia-fitness-v4/
-V = {"css": 2, "js": 1}                   # bump to bust browser caches
+V = {"css": 3, "js": 1}                   # bump to bust browser caches
 
 e = html.escape
 TEL = "tel:" + S["phoneIntl"]
@@ -81,14 +81,14 @@ def ext(url, text, cls=""):
 
 
 def img(p, photo, cls, sizes, eager=False, alt=None):
-    """<img> with a 480/800 variant in srcset when one exists next to the file."""
+    """<img> with every smaller width variant (name-<w>.webp) that exists next to the file in srcset."""
     f = photo["file"]
-    small = next((f.replace(".webp", f"-{w}.webp") for w in (480, 800)
-                  if os.path.exists(os.path.join(ROOT, "assets/img", f.replace(".webp", f"-{w}.webp")))), None)
+    widths = [w for w in (240, 400, 480, 640, 800) if w < photo["w"]
+              and os.path.exists(os.path.join(ROOT, "assets/img", f.replace(".webp", f"-{w}.webp")))]
     srcset = ""
-    if small:
-        w = small.rsplit("-", 1)[1].split(".")[0]
-        srcset = f' srcset="{p}assets/img/{small} {w}w, {p}assets/img/{f} {photo["w"]}w" sizes="{sizes}"'
+    if widths:
+        cands = [f'{p}assets/img/{f.replace(".webp", f"-{w}.webp")} {w}w' for w in widths] + [f'{p}assets/img/{f} {photo["w"]}w']
+        srcset = f' srcset="{", ".join(cands)}" sizes="{sizes}"'
     loading = ' fetchpriority="high"' if eager else ' loading="lazy"'
     a = photo["alt"] if alt is None else alt
     return f'<img class="{cls}" src="{p}assets/img/{f}"{srcset} alt="{e(a)}" width="{photo["w"]}" height="{photo["h"]}"{loading}>'
@@ -144,7 +144,6 @@ def head(p, path, title, desc, og="og-nadia-fitness.jpg", og_alt="Logotipo de Na
 <script>document.documentElement.classList.add("js");try{{var t=localStorage.getItem("nf4-theme");if(t)document.documentElement.setAttribute("data-theme",t)}}catch(e){{}}</script>
 <link rel="preload" href="{p}assets/fonts/barlow-condensed-800-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="{p}assets/fonts/instrument-sans-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{p}assets/css/fonts.css?v=1">
 <link rel="stylesheet" href="{p}assets/css/site.css?v={V["css"]}">
 <script type="application/ld+json">{json_ld()}</script>
 <script src="{p}assets/js/site.js?v={V["js"]}" defer></script>
@@ -163,7 +162,7 @@ def header(p, current):
 <a class="skip" href="#main">Saltar al contenido</a>
 <header class="band">
 <div class="wrap band-in">
-<a class="brand" href="{home}"><img src="{p}assets/img/logo.png" alt="{e(S["name"])}, inicio" width="110" height="60"></a>
+<a class="brand" href="{home}"><img src="{p}assets/img/logo-280.webp" srcset="{p}assets/img/logo-140.webp 140w, {p}assets/img/logo-200.webp 200w, {p}assets/img/logo-280.webp 280w, {p}assets/img/logo-340.webp 340w, {p}assets/img/logo-400.webp 400w" sizes="95px" alt="{e(S["name"])}, inicio" width="110" height="60"></a>
 <nav class="nav" aria-label="Principal">
 <button class="burger" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menú"><span></span><span></span><span></span></button>
 <ul id="menu">{"".join(items)}</ul>
@@ -181,7 +180,7 @@ def footer(p):
     pages = "".join(f'<li><a href="{p}{h}">{l}</a></li>' for h, l in [("", "Inicio")] + NAV).replace('href=""', f'href="{home}"')
     return f'''<footer class="foot">
 <div class="wrap foot-grid">
-<div><img class="foot-logo" src="{p}assets/img/logo.png" alt="" width="110" height="60" loading="lazy">
+<div><img class="foot-logo" src="{p}assets/img/logo-280.webp" srcset="{p}assets/img/logo-140.webp 140w, {p}assets/img/logo-200.webp 200w, {p}assets/img/logo-280.webp 280w, {p}assets/img/logo-340.webp 340w, {p}assets/img/logo-400.webp 400w" sizes="95px" alt="" width="110" height="60" loading="lazy">
 <p>{e(S["tagline"])}.</p>
 <p>{ext(S["instagram"], e(S["instagramHandle"]))} · {ext(S["facebook"], "Facebook")}</p></div>
 <div><h2 class="label">Contacto</h2><p><a href="{TEL}">{S["phone"]}</a><br>{ext(WHATSAPP, "WhatsApp")}</p>
